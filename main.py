@@ -86,9 +86,21 @@ def generate_answer(question, retriever):
 
         return answer
 
-    except openai.error.OpenAIError as e:
-        print(f"Error in generating answer: {e}")
-        return "Error: Could not process the request."
+    except openai.error.InvalidRequestError as e:
+        print(f"Invalid request error: {e}")
+        return "Error: Invalid request."
+    except openai.error.AuthenticationError as e:
+        print(f"Authentication error: {e}")
+        return "Error: Authentication failed."
+    except openai.error.RateLimitError as e:
+        print(f"Rate limit error: {e}")
+        return "Error: Rate limit exceeded."
+    except openai.error.OpenAIError as e:  # Catch all other OpenAI errors
+        print(f"OpenAI error: {e}")
+        return "Error: An error occurred with the OpenAI API."
+    except Exception as e:
+        print(f"Unexpected error: {e}")
+        return "Error: An unexpected error occurred."
 
 def main():
     st.header("TravGPT")

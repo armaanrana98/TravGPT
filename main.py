@@ -1,5 +1,6 @@
 import streamlit as st
 import openai
+from openai import OpenAI
 from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -54,36 +55,23 @@ def generate_answer(question, retriever):
         relevant_docs = retriever.get_relevant_documents(question)
         context = format_docs(relevant_docs)
 
-        # Initialize the assistant with specific instructions
-        assistant = openai.Assistant.create(
-            model="gpt-4o",
-            name="TravGPT Assistant",
-            instructions="Provide concise and accurate answers based on the context provided. Use a conversational tone."
+        # Initialize the OpenAI client
+        client = OpenAI(api_key=openai_api_key)
+
+        # Create the prompt
+        prompt = f"Context: {context}\n\nQuestion: {question}"
+
+        # Get response from OpenAI API
+        response = client.ChatCompletion.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant that provides accurate and concise answers based on the provided context."},
+                {"role": "user", "content": prompt}
+            ]
         )
 
-        # Create a thread for this interaction
-        thread = openai.Thread.create()
-
-        # Send the user's question and context to the assistant
-        openai.Thread.send_message(
-            thread_id=thread.id,
-            role="user",
-            content=f"Context: {context}\n\nQuestion: {question}"
-        )
-
-        # Wait for the assistant's response
-        time.sleep(10)  # Adjust the sleep time as needed
-
-        # Retrieve the response
-        messages = openai.Thread.get_messages(thread_id=thread.id)
-
-        # Extract the answer from the assistant's response
-        answer = ""
-        for msg in messages['data']:
-            if msg['role'] == 'assistant':
-                answer = msg['content']
-                break
-
+        # Extract the answer from the response
+        answer = response.choices[0].message['content']
         return answer
 
     except openai.error.InvalidRequestError as e:
@@ -108,7 +96,7 @@ def main():
     question = st.text_input("Ask a question:")
 
     if st.button("Ask"):
-        with st.spinner("Kaha se late ho itne Ache Question :)"):
+        with st.spinner("Processing..."):
             # Open and process the PDF file
             raw_text = pdf_file_to_text(PDF_FILE_PATH)
             text_chunks = text_splitter(raw_text)

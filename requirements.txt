@@ -4,3 +4,10 @@ faiss-cpu
 transformers
 sentence-transformers
 PyPDF2
+langchain
+langchain-community
+langchain-core
+langchain-text-splitters
+faiss-cpu
+transformers
+sentence-transformers

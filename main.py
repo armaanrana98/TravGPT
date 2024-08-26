@@ -58,9 +58,9 @@ def generate_answer(question, retriever):
         {"role": "user", "content": f"Context: {context}\n\nQuestion: {question}\nAnswer:"}
     ]
 
-    # Call the OpenAI API to get the response
+    # Call the OpenAI API to get the response using the gpt-4o model
     response = openai.ChatCompletion.create(
-        model="gpt-4-turbo",  # Correct model name
+        model="gpt-4o",  # Using gpt-4o model
         messages=messages,
         max_tokens=150,
         temperature=0.1

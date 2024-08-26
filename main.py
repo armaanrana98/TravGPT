@@ -4,7 +4,6 @@ from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 import PyPDF2
-import time
 
 # Set the page configuration
 st.set_page_config(
@@ -16,7 +15,6 @@ st.set_page_config(
 
 # Set your OpenAI API key
 openai_api_key = 'sk-proj-sHu3KT60m5Q51Ivtc5KCT3BlbkFJEoqpkJl19iEpAZN1Ttsp'
-openai.api_key = openai_api_key
 
 # Path to the PDF file (relative path)
 PDF_FILE_PATH = "data.pdf"
@@ -61,32 +59,18 @@ def generate_answer(question, retriever):
         prompt = f"Context: {context}\n\nQuestion: {question}"
 
         # Get response from OpenAI API
-        response = client.ChatCompletion.create(
+        response = client.Completions.create(
             model="gpt-4",
-            messages=[
-                {"role": "system", "content": "You are a helpful assistant that provides accurate and concise answers based on the provided context."},
-                {"role": "user", "content": prompt}
-            ]
+            prompt=prompt,
+            max_tokens=150
         )
 
         # Extract the answer from the response
-        answer = response.choices[0].message['content']
+        answer = response.choices[0].text.strip()
         return answer
 
-    except openai.error.InvalidRequestError as e:
-        print(f"Invalid request error: {e}")
-        return "Error: Invalid request."
-    except openai.error.AuthenticationError as e:
-        print(f"Authentication error: {e}")
-        return "Error: Authentication failed."
-    except openai.error.RateLimitError as e:
-        print(f"Rate limit error: {e}")
-        return "Error: Rate limit exceeded."
-    except openai.error.OpenAIError as e:  # Catch all other OpenAI errors
-        print(f"OpenAI error: {e}")
-        return "Error: An error occurred with the OpenAI API."
     except Exception as e:
-        print(f"Unexpected error: {e}")
+        print(f"Error: {e}")
         return "Error: An unexpected error occurred."
 
 def main():

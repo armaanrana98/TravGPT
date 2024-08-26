@@ -4,6 +4,7 @@ from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 import PyPDF2
+import time
 
 # Set the page configuration
 st.set_page_config(
@@ -48,27 +49,46 @@ def format_docs(docs):
     return "\n\n".join(doc.page_content for doc in docs)
 
 def generate_answer(question, retriever):
-    # Retrieve relevant documents
-    relevant_docs = retriever.get_relevant_documents(question)
-    context = format_docs(relevant_docs)
+    try:
+        # Retrieve relevant documents
+        relevant_docs = retriever.get_relevant_documents(question)
+        context = format_docs(relevant_docs)
 
-    # Create the messages list to send to the ChatGPT API
-    messages = [
-        {"role": "system", "content": "You are a helpful assistant."},
-        {"role": "user", "content": f"Context: {context}\n\nQuestion: {question}\nAnswer:"}
-    ]
+        # Initialize the assistant with specific instructions
+        assistant = openai.Assistant.create(
+            model="gpt-4o",
+            name="TravGPT Assistant",
+            instructions="Provide concise and accurate answers based on the context provided. Use a conversational tone."
+        )
 
-    # Call the OpenAI API to get the response using the gpt-4o model
-    response = openai.ChatCompletion.create(
-        model="gpt-4o",  # Using gpt-4o model
-        messages=messages,
-        max_tokens=150,
-        temperature=0.1
-    )
+        # Create a thread for this interaction
+        thread = openai.Thread.create()
 
-    # Extract and return the answer from the response
-    answer = response['choices'][0]['message']['content'].strip()
-    return answer
+        # Send the user's question and context to the assistant
+        openai.Thread.send_message(
+            thread_id=thread.id,
+            role="user",
+            content=f"Context: {context}\n\nQuestion: {question}"
+        )
+
+        # Wait for the assistant's response
+        time.sleep(10)  # Adjust the sleep time as needed
+
+        # Retrieve the response
+        messages = openai.Thread.get_messages(thread_id=thread.id)
+
+        # Extract the answer from the assistant's response
+        answer = ""
+        for msg in messages['data']:
+            if msg['role'] == 'assistant':
+                answer = msg['content']
+                break
+
+        return answer
+
+    except openai.error.OpenAIError as e:
+        print(f"Error in generating answer: {e}")
+        return "Error: Could not process the request."
 
 def main():
     st.header("TravGPT")

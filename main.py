@@ -6,10 +6,11 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
+import PyPDF2
 
 # Set the page configuration
 st.set_page_config(
-    page_title="TravGPT",
+    page_title="ThaparGPT",
     page_icon="🤖",
     layout="centered",
     initial_sidebar_state="auto"
@@ -46,10 +47,10 @@ def format_docs(docs):
     return "\n\n".join(doc.page_content for doc in docs)
 
 def generate_answer(question, retriever):
-    cohere_llm = Cohere(model="command", temperature=0.1, cohere_api_key='yZ6ffLIC0qNWJrIWefcrmPs7BWIkOlD5ZpQV1b9Y')
+    cohere_llm = Cohere(model="command", temperature=0.1, cohere_api_key='sRmFY97EVTJa7VaaaQha5oH7lScl1rxTZv8x6KrV')
 
     prompt_template = """Answer the question as precisely as possible using the provided context. If the answer is
-                    not contained in the context, say "answer not available in context." \n\n
+                    not contained in the context, say "answer not available in context" "\n\n
                     Context: \n {context} \n\n
                     Question: \n {question} \n
                     Answer:"""
@@ -66,7 +67,7 @@ def generate_answer(question, retriever):
     return rag_chain.invoke(question)
 
 def main():
-    st.header("TravGPT 🤖")
+    st.header("Thapar GPT🤖")
 
     question = st.text_input("Ask a question:")
 

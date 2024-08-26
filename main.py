@@ -10,7 +10,7 @@ import PyPDF2
 
 # Set the page configuration
 st.set_page_config(
-    page_title="ThaparGPT",
+    page_title="TravGPT",
     page_icon="🤖",
     layout="centered",
     initial_sidebar_state="auto"
@@ -67,7 +67,7 @@ def generate_answer(question, retriever):
     return rag_chain.invoke(question)
 
 def main():
-    st.header("Thapar GPT🤖")
+    st.header("TravGPT🤖")
 
     question = st.text_input("Ask a question:")
 

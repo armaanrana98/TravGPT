@@ -20,15 +20,17 @@ openai_api_key = 'sk-proj-sHu3KT60m5Q51Ivtc5KCT3BlbkFJEoqpkJl19iEpAZN1Ttsp'
 PDF_FILE_PATH = "data.pdf"
 
 def pdf_file_to_text(pdf_file):
-    # Extract text from the PDF file
+    print("Extracting text from PDF...")
     text = ""
     with open(pdf_file, 'rb') as file:
         reader = PyPDF2.PdfReader(file)
         for page in reader.pages:
             text += page.extract_text()
+    print(f"Extracted text length: {len(text)}")
     return text
 
 def text_splitter(raw_text):
+    print("Splitting text into chunks...")
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=1000,
         chunk_overlap=600,  # This overlap helps maintain context between chunks
@@ -36,29 +38,40 @@ def text_splitter(raw_text):
         separators=['\n', '\n\n', ' ', ',']
     )
     chunks = text_splitter.split_text(text=raw_text)
+    print(f"Number of text chunks: {len(chunks)}")
     return chunks
 
 def get_vector_store(text_chunks):
+    print("Generating vector store...")
     embeddings = HuggingFaceEmbeddings(model_name='sentence-transformers/all-MiniLM-L6-v2')
     vectorstore = FAISS.from_texts(text_chunks, embedding=embeddings)
+    print("Vector store created successfully.")
     return vectorstore
 
 def format_docs(docs):
-    return "\n\n".join(doc.page_content for doc in docs)
+    formatted_docs = "\n\n".join(doc.page_content for doc in docs)
+    print(f"Formatted docs length: {len(formatted_docs)}")
+    return formatted_docs
 
 def generate_answer(question, retriever):
+    print("Generating answer...")
     try:
         # Retrieve relevant documents
         relevant_docs = retriever.get_relevant_documents(question)
+        print(f"Number of relevant documents: {len(relevant_docs)}")
+
         context = format_docs(relevant_docs)
 
         # Initialize the OpenAI client
+        print("Initializing OpenAI client...")
         client = OpenAI(api_key=openai_api_key)
 
         # Create the prompt
         prompt = f"Context: {context}\n\nQuestion: {question}"
+        print(f"Prompt length: {len(prompt)}")
 
         # Get response from OpenAI API
+        print("Sending request to OpenAI API...")
         response = client.Completions.create(
             model="gpt-4",
             prompt=prompt,
@@ -67,6 +80,7 @@ def generate_answer(question, retriever):
 
         # Extract the answer from the response
         answer = response.choices[0].text.strip()
+        print(f"Answer generated: {answer}")
         return answer
 
     except Exception as e:

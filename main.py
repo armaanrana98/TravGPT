@@ -17,8 +17,8 @@ st.set_page_config(
 openai_api_key = 'sk-proj-sHu3KT60m5Q51Ivtc5KCT3BlbkFJEoqpkJl19iEpAZN1Ttsp'
 openai.api_key = openai_api_key
 
-# Path to the PDF file
-PDF_FILE_PATH = r"C:\Users\Armaan Rana\Desktop\Python\Rag\data.pdf"
+# Path to the PDF file (relative path)
+PDF_FILE_PATH = "data.pdf"
 
 def pdf_file_to_text(pdf_file):
     # Extract text from the PDF file

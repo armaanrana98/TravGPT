@@ -1,8 +1,8 @@
 import streamlit as st
 import openai
-from langchain_community.vectorstores import FAISS
-from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain.vectorstores import FAISS
+from langchain.embeddings import HuggingFaceEmbeddings
+from langchain.text_splitters import RecursiveCharacterTextSplitter
 import PyPDF2
 
 # Set the page configuration
@@ -51,22 +51,17 @@ def generate_answer(question, retriever):
     # Retrieve relevant documents
     relevant_docs = retriever.get_relevant_documents(question)
     context = format_docs(relevant_docs)
-    
-    # Create the prompt to send to ChatGPT
-    prompt_template = """Answer the question as precisely as possible using the provided context. If the answer is
-                    not contained in the context, say "answer not available in context". \n\n
-                    Context: \n{context}\n\n
-                    Question: \n{question}\n
-                    Answer:"""
-    prompt = prompt_template.format(context=context, question=question)
+
+    # Create the messages list to send to the ChatGPT API
+    messages = [
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": f"Context: {context}\n\nQuestion: {question}\nAnswer:"}
+    ]
 
     # Call the OpenAI API to get the response
     response = openai.ChatCompletion.create(
-        model="gpt-4-turbo-preview",  # Use gpt-4-turbo-preview model
-        messages=[
-            {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", "content": prompt}
-        ],
+        model="gpt-4-turbo",  # Use the correct model name
+        messages=messages,
         max_tokens=150,
         temperature=0.1
     )

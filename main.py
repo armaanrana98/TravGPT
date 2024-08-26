@@ -1,8 +1,8 @@
 import streamlit as st
 import openai
-from langchain.vectorstores import FAISS
-from langchain.embeddings import HuggingFaceEmbeddings
-from langchain.text_splitters import RecursiveCharacterTextSplitter
+from langchain_community.vectorstores import FAISS
+from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 import PyPDF2
 
 # Set the page configuration
@@ -60,7 +60,7 @@ def generate_answer(question, retriever):
 
     # Call the OpenAI API to get the response
     response = openai.ChatCompletion.create(
-        model="gpt-4-turbo",  # Use the correct model name
+        model="gpt-4-turbo",  # Correct model name
         messages=messages,
         max_tokens=150,
         temperature=0.1

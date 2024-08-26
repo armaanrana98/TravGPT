@@ -1,9 +1,11 @@
 import streamlit as st
-from openai import OpenAI
+from langchain_community.llms import Cohere
 from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-import PyPDF2
+from langchain_core.prompts import PromptTemplate
+from langchain_core.runnables import RunnablePassthrough
+from langchain_core.output_parsers import StrOutputParser
 
 # Set the page configuration
 st.set_page_config(
@@ -13,24 +15,19 @@ st.set_page_config(
     initial_sidebar_state="auto"
 )
 
-# Set your OpenAI API key
-openai_api_key = 'sk-proj-sHu3KT60m5Q51Ivtc5KCT3BlbkFJEoqpkJl19iEpAZN1Ttsp'
-
-# Path to the PDF file (relative path)
+# Path to the PDF file
 PDF_FILE_PATH = "data.pdf"
 
 def pdf_file_to_text(pdf_file):
-    print("Extracting text from PDF...")
+    # Extract text from the PDF file
     text = ""
     with open(pdf_file, 'rb') as file:
         reader = PyPDF2.PdfReader(file)
         for page in reader.pages:
             text += page.extract_text()
-    print(f"Extracted text length: {len(text)}")
     return text
 
 def text_splitter(raw_text):
-    print("Splitting text into chunks...")
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=1000,
         chunk_overlap=600,  # This overlap helps maintain context between chunks
@@ -38,57 +35,38 @@ def text_splitter(raw_text):
         separators=['\n', '\n\n', ' ', ',']
     )
     chunks = text_splitter.split_text(text=raw_text)
-    print(f"Number of text chunks: {len(chunks)}")
     return chunks
 
 def get_vector_store(text_chunks):
-    print("Generating vector store...")
     embeddings = HuggingFaceEmbeddings(model_name='sentence-transformers/all-MiniLM-L6-v2')
     vectorstore = FAISS.from_texts(text_chunks, embedding=embeddings)
-    print("Vector store created successfully.")
     return vectorstore
 
 def format_docs(docs):
-    formatted_docs = "\n\n".join(doc.page_content for doc in docs)
-    print(f"Formatted docs length: {len(formatted_docs)}")
-    return formatted_docs
+    return "\n\n".join(doc.page_content for doc in docs)
 
 def generate_answer(question, retriever):
-    print("Generating answer...")
-    try:
-        # Retrieve relevant documents
-        relevant_docs = retriever.get_relevant_documents(question)
-        print(f"Number of relevant documents: {len(relevant_docs)}")
+    cohere_llm = Cohere(model="command", temperature=0.1, cohere_api_key='yZ6ffLIC0qNWJrIWefcrmPs7BWIkOlD5ZpQV1b9Y')
 
-        context = format_docs(relevant_docs)
+    prompt_template = """Answer the question as precisely as possible using the provided context. If the answer is
+                    not contained in the context, say "answer not available in context." \n\n
+                    Context: \n {context} \n\n
+                    Question: \n {question} \n
+                    Answer:"""
 
-        # Initialize the OpenAI client
-        print("Initializing OpenAI client...")
-        client = OpenAI(api_key=openai_api_key)
+    prompt = PromptTemplate.from_template(template=prompt_template)
 
-        # Create the prompt
-        prompt = f"Context: {context}\n\nQuestion: {question}"
-        print(f"Prompt length: {len(prompt)}")
+    rag_chain = (
+        {"context": retriever | format_docs, "question": RunnablePassthrough()}
+        | prompt
+        | cohere_llm
+        | StrOutputParser()
+    )
 
-        # Get response from OpenAI API
-        print("Sending request to OpenAI API...")
-        response = client.Completions.create(
-            model="gpt-4",
-            prompt=prompt,
-            max_tokens=150
-        )
-
-        # Extract the answer from the response
-        answer = response.choices[0].text.strip()
-        print(f"Answer generated: {answer}")
-        return answer
-
-    except Exception as e:
-        print(f"Error: {e}")
-        return "Error: An unexpected error occurred."
+    return rag_chain.invoke(question)
 
 def main():
-    st.header("TravGPT")
+    st.header("TravGPT 🤖")
 
     question = st.text_input("Ask a question:")
 

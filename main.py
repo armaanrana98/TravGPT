@@ -47,7 +47,7 @@ def format_docs(docs):
     return "\n\n".join(doc.page_content for doc in docs)
 
 def generate_answer(question, retriever):
-    cohere_llm = Cohere(model="command", temperature=0.1, cohere_api_key='sRmFY97EVTJa7VaaaQha5oH7lScl1rxTZv8x6KrV')
+    cohere_llm = Cohere(model="command-r-plus", temperature=0.1, cohere_api_key='sRmFY97EVTJa7VaaaQha5oH7lScl1rxTZv8x6KrV')
 
     prompt_template = """Answer the question as precisely as possible using the provided context. If the answer is
                     not contained in the context, say "answer not available in context" "\n\n

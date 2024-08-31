@@ -1,11 +1,5 @@
 import streamlit as st
-from langchain_community.llms import Cohere
-from langchain_community.vectorstores import FAISS
-from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_core.prompts import PromptTemplate
-from langchain_core.runnables import RunnablePassthrough
-from langchain_core.output_parsers import StrOutputParser
+from openai import OpenAI
 import PyPDF2
 
 # Set the page configuration
@@ -19,6 +13,12 @@ st.set_page_config(
 # Path to the PDF file
 PDF_FILE_PATH = "data.pdf"
 
+# OpenAI API key
+openai_api_key = "sk-proj-7sL0y4cIPUax61uBuIKcT3BlbkFJQKrAht4yYLcX0409xrcJ"
+
+# Initialize OpenAI client
+client = OpenAI(api_key=openai_api_key)
+
 def pdf_file_to_text(pdf_file):
     # Extract text from the PDF file
     text = ""
@@ -28,43 +28,39 @@ def pdf_file_to_text(pdf_file):
             text += page.extract_text()
     return text
 
-def text_splitter(raw_text):
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=1000,
-        chunk_overlap=600,  # This overlap helps maintain context between chunks
-        length_function=len,
-        separators=['\n', '\n\n', ' ', ',']
+def upload_and_index_file(pdf_file_path):
+    # Upload the PDF to OpenAI and create a vector store
+    with open(pdf_file_path, "rb") as file_stream:
+        vector_store = client.beta.vector_stores.create(name="TravGPT Documents")
+        file_batch = client.beta.vector_stores.file_batches.upload_and_poll(
+            vector_store_id=vector_store.id, files=[file_stream]
+        )
+    return vector_store
+
+def create_assistant_with_vector_store(vector_store):
+    # Create an assistant and link it with the vector store
+    assistant = client.beta.assistants.create(
+        name="TravGPT Assistant",
+        instructions="You are an expert in answering travel-related questions using the provided documents.",
+        model="gpt-4o",
+        tools=[{"type": "file_search"}],
+        tool_resources={"file_search": {"vector_store_ids": [vector_store.id]}}
     )
-    chunks = text_splitter.split_text(text=raw_text)
-    return chunks
+    return assistant
 
-def get_vector_store(text_chunks):
-    embeddings = HuggingFaceEmbeddings(model_name='sentence-transformers/all-MiniLM-L6-v2')
-    vectorstore = FAISS.from_texts(text_chunks, embedding=embeddings)
-    return vectorstore
-
-def format_docs(docs):
-    return "\n\n".join(doc.page_content for doc in docs)
-
-def generate_answer(question, retriever):
-    cohere_llm = Cohere(model="command", temperature=0.1, cohere_api_key='sRmFY97EVTJa7VaaaQha5oH7lScl1rxTZv8x6KrV')
-
-    prompt_template = """Answer the question as precisely as possible using the provided context.Answer it in a proper and detailed manner If the answer is
-                    not contained in the context, say "answer not available in context" "\n\n
-                    Context: \n {context} \n\n
-                    Question: \n {question} \n
-                    Answer:"""
-
-    prompt = PromptTemplate.from_template(template=prompt_template)
-
-    rag_chain = (
-        {"context": retriever | format_docs, "question": RunnablePassthrough()}
-        | prompt
-        | cohere_llm
-        | StrOutputParser()
+def generate_answer(assistant_id, question):
+    # Create a thread, attach the question, and get the answer
+    thread = client.beta.threads.create(
+        assistant_id=assistant_id,
+        messages=[{"role": "user", "content": question}]
     )
 
-    return rag_chain.invoke(question)
+    # Stream the response from the assistant
+    with client.beta.threads.runs.stream(thread_id=thread.id, assistant_id=assistant_id) as stream:
+        for event in stream:
+            if event.type == "text_created":
+                st.write(event.text)
+                break  # Stop after getting the first response
 
 def main():
     st.header("TravGPT🤖")
@@ -74,14 +70,11 @@ def main():
     if st.button("Ask"):
         with st.spinner("Processing..."):
             # Open and process the PDF file
-            raw_text = pdf_file_to_text(PDF_FILE_PATH)
-            text_chunks = text_splitter(raw_text)
-            vectorstore = get_vector_store(text_chunks)
-            retriever = vectorstore.as_retriever(search_type="similarity", search_kwargs={"k": 5})
+            vector_store = upload_and_index_file(PDF_FILE_PATH)
+            assistant = create_assistant_with_vector_store(vector_store)
 
             if question:
-                answer = generate_answer(question, retriever)
-                st.write(answer)
+                generate_answer(assistant.id, question)
             else:
                 st.warning("Please enter a question.")
 

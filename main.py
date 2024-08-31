@@ -14,7 +14,7 @@ st.set_page_config(
 PDF_FILE_PATH = "data.pdf"
 
 # OpenAI API key
-openai_api_key = "sk-proj-7sL0y4cIPUax61uBuIKcT3BlbkFJQKrAht4yYLcX0409xrcJ"
+openai_api_key = ""
 
 # Initialize OpenAI client
 client = OpenAI(api_key=openai_api_key)

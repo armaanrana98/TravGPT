@@ -41,13 +41,12 @@ def create_assistant_with_vector_store(vector_store):
     )
     return assistant
 
-def generate_answer(assistant_id, question):
+def generate_answer(question):
     thread = client.beta.threads.create(
-        assistant_id=assistant_id,
         messages=[{"role": "user", "content": question}]
     )
 
-    with client.beta.threads.runs.stream(thread_id=thread.id, assistant_id=assistant_id) as stream:
+    with client.beta.threads.runs.stream(thread_id=thread.id) as stream:
         for event in stream:
             if event.type == "text_created":
                 st.write(event.text)
@@ -64,7 +63,7 @@ def main():
             assistant = create_assistant_with_vector_store(vector_store)
 
             if question:
-                generate_answer(assistant.id, question)
+                generate_answer(question)
             else:
                 st.warning("Please enter a question.")
 

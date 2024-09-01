@@ -54,7 +54,8 @@ def generate_answer(assistant_id, question):
                 for delta_block in event.data.delta.content:
                     if delta_block.type == 'text':
                         answer += delta_block.text.value
-                        st.write(answer)  # Display the ongoing answer
+        # Display the full response once it's complete
+        st.write(answer)
 
 def main():
     st.header("TravGPT🤖")

@@ -46,13 +46,15 @@ def generate_answer(assistant_id, question):
         messages=[{"role": "user", "content": question}]
     )
 
+    answer = ""
     with client.beta.threads.runs.stream(thread_id=thread.id, assistant_id=assistant_id) as stream:
         for event in stream:
-            st.write(f"Event received: {event}")  # Print the event for debugging
-            # Assuming event.content.text exists based on typical response structure
-            if hasattr(event, "content") and hasattr(event.content, "text"):
-                st.write(event.content.text)
-                break
+            if event.event == 'thread.message.delta':
+                # Collect text from the message delta events
+                for delta_block in event.data.delta.content:
+                    if delta_block.type == 'text':
+                        answer += delta_block.text.value
+                        st.write(answer)  # Display the ongoing answer
 
 def main():
     st.header("TravGPT🤖")

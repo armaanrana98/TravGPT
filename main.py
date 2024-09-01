@@ -48,8 +48,10 @@ def generate_answer(assistant_id, question):
 
     with client.beta.threads.runs.stream(thread_id=thread.id, assistant_id=assistant_id) as stream:
         for event in stream:
-            if event.type == "text_created":
-                st.write(event.text)
+            st.write(f"Event received: {event}")  # Print the event for debugging
+            # Assuming event.content.text exists based on typical response structure
+            if hasattr(event, "content") and hasattr(event.content, "text"):
+                st.write(event.content.text)
                 break
 
 def main():

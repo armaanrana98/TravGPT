@@ -1,6 +1,8 @@
 import streamlit as st
 from openai import OpenAI
 import PyPDF2
+import mysql.connector
+from mysql.connector import Error
 
 st.set_page_config(
     page_title="TravGPT",
@@ -14,6 +16,30 @@ PDF_FILE_PATH = "data.pdf"
 openai_api_key = st.secrets["OPENAI_API_KEY"]
 
 client = OpenAI(api_key=openai_api_key)
+
+# Database connection
+def get_db_connection():
+    return mysql.connector.connect(
+        host=st.secrets["mysql"]["host"],
+        user=st.secrets["mysql"]["user"],
+        password=st.secrets["mysql"]["password"],
+        database=st.secrets["mysql"]["database"]
+    )
+
+def log_question_and_response(question, response, response_time_seconds):
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor()
+        query = """
+            INSERT INTO question_logs (question, response, response_time_seconds)
+            VALUES (%s, %s, %s)
+        """
+        cursor.execute(query, (question, response, response_time_seconds))
+        connection.commit()
+        cursor.close()
+        connection.close()
+    except Error as e:
+        st.error(f"Error: {e}")
 
 def pdf_file_to_text(pdf_file):
     text = ""
@@ -47,15 +73,17 @@ def generate_answer(assistant_id, question):
     )
 
     answer = ""
+    start_time = time.time()
     with client.beta.threads.runs.stream(thread_id=thread.id, assistant_id=assistant_id) as stream:
         for event in stream:
             if event.event == 'thread.message.delta':
-                # Collect text from the message delta events
                 for delta_block in event.data.delta.content:
                     if delta_block.type == 'text':
                         answer += delta_block.text.value
-        # Display the full response once it's complete
-        st.write(answer)
+    end_time = time.time()
+    response_time_seconds = end_time - start_time
+    log_question_and_response(question, answer, response_time_seconds)
+    st.write(answer)
 
 def main():
     st.header("TravGPT🤖")

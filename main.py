@@ -3,6 +3,7 @@ from openai import OpenAI
 import PyPDF2
 import mysql.connector
 from mysql.connector import Error
+import time 
 
 st.set_page_config(
     page_title="TravGPT",

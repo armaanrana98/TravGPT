@@ -112,18 +112,30 @@ def generate_answer(assistant_id, question):
 
         answer = ""
         start_time = time.time()
+
+        st.write("Starting to stream the answer...")
         with client.beta.threads.runs.stream(thread_id=thread.id, assistant_id=assistant_id) as stream:
             for event in stream:
+                st.write(f"Event received: {event.event}")
                 if event.event == 'thread.message.delta':
                     for delta_block in event.data.delta.content:
+                        st.write(f"Delta block received: {delta_block}")
                         if delta_block.type == 'text':
-                            answer += delta_block.text.value
-        end_time = time.time()
+                            st.write(f"Adding text: {delta_block.text.value}")
+                            answer += delta_block.text.value  # Log each part of the answer as it arrives
+                            st.write(f"Current answer: {answer}")
 
+        end_time = time.time()
         response_time_seconds = end_time - start_time
-        st.write(f"Answer generated in {response_time_seconds} seconds")
+        st.write(f"Answer generation completed in {response_time_seconds} seconds")
+
         log_question_and_response(question, answer, response_time_seconds)
-        st.write(answer)
+        
+        # Final answer display
+        if answer.strip():
+            st.write(f"Final answer: {answer}")
+        else:
+            st.write("No valid answer received from the assistant.")
     except Exception as e:
         st.error(f"Error generating answer: {e}")
         print(f"Error generating answer: {e}")

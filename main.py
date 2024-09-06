@@ -93,6 +93,7 @@ def main():
 
     if st.button("Ask"):
         with st.spinner("Processing..."):
+            print("started")
             vector_store = upload_and_index_file(PDF_FILE_PATH)
             print("1")
             assistant = create_assistant_with_vector_store(vector_store)

@@ -18,7 +18,7 @@ openai_api_key = st.secrets["OPENAI_API_KEY"]
 
 client = OpenAI(api_key=openai_api_key)
 
-# Database connection
+
 def get_db_connection():
     return mysql.connector.connect(
         host=st.secrets["mysql"]["host"],

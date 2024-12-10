@@ -89,7 +89,7 @@ def generate_answer(assistant_id, question):
 def main():
     st.header("TravGPT🤖")
 
-    question = st.text_input("Get answers to all your queries:")
+    question = st.text_input("Get answers to all your internal queries:")
 
     if st.button("Ask"):
         with st.spinner("Processing..."):

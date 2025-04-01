@@ -16,7 +16,9 @@ PDF_FILE_PATH = "data.pdf"
 
 openai_api_key = st.secrets["OPENAI_API_KEY"]
 
-# Initialize the OpenAI client with the beta header to opt into the new assistants/v2 endpoints.
+# Initialize the OpenAI client.
+# We use the GA endpoints for vector stores (client.vector_stores)
+# and retain beta endpoints for assistants and threads.
 client = OpenAI(
     api_key=openai_api_key,
     default_headers={"OpenAI-Beta": "assistants=v2"}
@@ -55,12 +57,12 @@ def pdf_file_to_text(pdf_file):
 
 def upload_and_index_file(pdf_file_path):
     with open(pdf_file_path, "rb") as file_stream:
-        # Create the vector store using the new singular endpoint.
-        vector_store = client.beta.vector_store.create(name="TravGPT Documents")
-        # Upload the file using the updated file upload method.
-        file_response = client.beta.vector_store.files.create(
+        # Create the vector store using the GA endpoint.
+        vector_store = client.vector_stores.create(name="TravGPT Documents")
+        # Upload the file using the file batching method.
+        file_batch = client.vector_stores.file_batches.upload_and_poll(
             vector_store_id=vector_store.id,
-            file=file_stream
+            files=[file_stream]
         )
     return vector_store
 

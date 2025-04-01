@@ -16,7 +16,11 @@ PDF_FILE_PATH = "data.pdf"
 
 openai_api_key = st.secrets["OPENAI_API_KEY"]
 
-client = OpenAI(api_key=openai_api_key)
+# Initialize the OpenAI client with the beta header to opt into the new assistants/v2 endpoints.
+client = OpenAI(
+    api_key=openai_api_key,
+    default_headers={"OpenAI-Beta": "assistants=v2"}
+)
 
 def get_db_connection():
     return mysql.connector.connect(
@@ -51,9 +55,9 @@ def pdf_file_to_text(pdf_file):
 
 def upload_and_index_file(pdf_file_path):
     with open(pdf_file_path, "rb") as file_stream:
-        # Create the vector store using the updated singular endpoint
+        # Create the vector store using the new singular endpoint.
         vector_store = client.beta.vector_store.create(name="TravGPT Documents")
-        # Upload the file using the new file upload method
+        # Upload the file using the updated file upload method.
         file_response = client.beta.vector_store.files.create(
             vector_store_id=vector_store.id,
             file=file_stream

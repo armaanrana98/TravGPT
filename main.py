@@ -3,7 +3,7 @@ from openai import OpenAI
 import PyPDF2
 import mysql.connector
 from mysql.connector import Error
-import time 
+import time
 
 st.set_page_config(
     page_title="TravGPT",
@@ -17,7 +17,6 @@ PDF_FILE_PATH = "data.pdf"
 openai_api_key = st.secrets["OPENAI_API_KEY"]
 
 client = OpenAI(api_key=openai_api_key)
-
 
 def get_db_connection():
     return mysql.connector.connect(
@@ -52,16 +51,23 @@ def pdf_file_to_text(pdf_file):
 
 def upload_and_index_file(pdf_file_path):
     with open(pdf_file_path, "rb") as file_stream:
-        vector_store = client.beta.vector_stores.create(name="TravGPT Documents")
-        file_batch = client.beta.vector_stores.file_batches.upload_and_poll(
-            vector_store_id=vector_store.id, files=[file_stream]
+        # Create the vector store using the updated singular endpoint
+        vector_store = client.beta.vector_store.create(name="TravGPT Documents")
+        # Upload the file using the new file upload method
+        file_response = client.beta.vector_store.files.create(
+            vector_store_id=vector_store.id,
+            file=file_stream
         )
     return vector_store
 
 def create_assistant_with_vector_store(vector_store):
     assistant = client.beta.assistants.create(
         name="TravGPT Assistant",
-        instructions="Answer the question as precisely as possible using the provided context. Answer it in a proper and detailed manner. If the answer is not contained in the context, say 'answer not available in context'.",
+        instructions=(
+            "Answer the question as precisely as possible using the provided context. "
+            "Answer it in a proper and detailed manner. If the answer is not contained in the context, "
+            "say 'answer not available in context'."
+        ),
         model="gpt-4o",
         tools=[{"type": "file_search"}],
         tool_resources={"file_search": {"vector_store_ids": [vector_store.id]}}
